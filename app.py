@@ -278,15 +278,30 @@ def _make_tools(
     """Return the 3 LangChain tools for the ReAct agent (closures over state)."""
 
     # ── Tool 1: playlist metadata ────────────────────────────────────────────
-    def get_playlist_metadata(query: str) -> str:  # noqa: ARG001
+    def get_playlist_metadata(query: str) -> str:
+        """Return metadata for all videos, optionally filtered by the query."""
+        query_lower = query.lower() if query.strip() else ""
         lines = [f"This playlist/collection has **{len(videos)}** video(s):\n"]
         for v in videos:
+            # Apply lightweight filter: include all videos if query is generic,
+            # or include only matching ones when a specific title/channel is given.
+            if query_lower and query_lower not in v["title"].lower() and query_lower not in v["channel"].lower():
+                continue
             badge = "✅ transcript" if v["video_id"] in transcripts else "❌ no transcript"
             lines.append(
                 f"• **{v['title']}** — {v['channel']}\n"
                 f"  Views: {v['views']:,} | Duration: {v['duration']} | {badge}\n"
                 f"  URL: {v['url']}\n"
             )
+        # Fall back to full list if the filter matched nothing
+        if len(lines) == 1:
+            for v in videos:
+                badge = "✅ transcript" if v["video_id"] in transcripts else "❌ no transcript"
+                lines.append(
+                    f"• **{v['title']}** — {v['channel']}\n"
+                    f"  Views: {v['views']:,} | Duration: {v['duration']} | {badge}\n"
+                    f"  URL: {v['url']}\n"
+                )
         return "".join(lines)
 
     # ── Tool 2: semantic transcript search (RAG) ─────────────────────────────
@@ -380,10 +395,6 @@ def _make_tools(
         ),
     ]
 
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# 7.  LANGCHAIN  REACT  AGENT
-# ═══════════════════════════════════════════════════════════════════════════════
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 7.  LANGGRAPH  REACT  AGENT
