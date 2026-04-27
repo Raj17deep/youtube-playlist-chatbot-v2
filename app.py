@@ -10,8 +10,8 @@ Stack : Streamlit · LangChain ReAct · LlamaIndex · ChromaDB (in-memory)
 import streamlit as st
 
 st.set_page_config(
-    page_title="🎬 YouTube Playlist AI Chatbot",
-    page_icon="🎬",
+    page_title="PlaylistIQ – Chat with Your YouTube Content",
+    page_icon="▶️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -542,7 +542,7 @@ def _page_dashboard() -> None:
     trs: dict[str, str] = st.session_state.transcripts
     llm = st.session_state.get("llm")
 
-    st.header("📊 Meta-Insights Dashboard")
+    st.header("Overview")
 
     # ── KPI metrics ─────────────────────────────────────────────────────────
     total_views = sum(v["views"] for v in vids)
@@ -558,7 +558,7 @@ def _page_dashboard() -> None:
     st.divider()
 
     # ── top 5 videos ─────────────────────────────────────────────────────────
-    st.subheader("🏆 Top Videos by Views")
+    st.subheader("Top Videos by Views")
     top = sorted(vids, key=lambda x: x["views"], reverse=True)[:5]
     cols = st.columns(len(top))
     for col, v in zip(cols, top):
@@ -575,7 +575,7 @@ def _page_dashboard() -> None:
     st.divider()
 
     # ── full video list ───────────────────────────────────────────────────────
-    st.subheader("📋 All Videos")
+    st.subheader("All Videos")
     for v in vids:
         has_tr = v["video_id"] in trs
         badge = "✅" if has_tr else "❌"
@@ -597,7 +597,7 @@ def _page_dashboard() -> None:
     st.divider()
 
     # ── AI editorial summary ─────────────────────────────────────────────────
-    st.subheader("🤖 AI Editorial Summary")
+    st.subheader("AI Editorial Summary")
 
     if "editorial_summary" not in st.session_state:
         st.session_state.editorial_summary = None
@@ -605,7 +605,7 @@ def _page_dashboard() -> None:
     if st.session_state.editorial_summary:
         st.markdown(st.session_state.editorial_summary)
     elif llm:
-        if st.button("✨ Generate AI Editorial Summary", key="gen_editorial"):
+        if st.button("Generate Summary", key="gen_editorial"):
             with st.spinner("Generating editorial summary…"):
                 video_list = "\n".join(
                     f"- {v['title']} by {v['channel']} "
@@ -634,7 +634,7 @@ def _page_dashboard() -> None:
                 except Exception as exc:  # noqa: BLE001
                     st.error(f"Failed to generate summary: {exc}")
     else:
-        st.info("Configure API keys to generate AI editorial summaries.")
+        st.info("Load a playlist or video to generate an AI editorial summary.")
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -644,10 +644,10 @@ def _page_dashboard() -> None:
 def _page_chat() -> None:
     agent_graph = st.session_state.get("agent_executor")
     if not agent_graph:
-        st.info("Agent is not ready yet – please process a URL first.")
+        st.info("Load a playlist or video first to start chatting.")
         return
 
-    st.header("💬 Chat with Your Playlist")
+    st.header("Chat")
 
     if "messages" not in st.session_state:
         st.session_state.messages = []
@@ -657,11 +657,11 @@ def _page_chat() -> None:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             if msg.get("steps"):
-                with st.expander("🔍 Agent Reasoning", expanded=False):
+                with st.expander("View sources & reasoning", expanded=False):
                     st.markdown(msg["steps"])
 
     # ── new user input ────────────────────────────────────────────────────────
-    if prompt := st.chat_input("Ask anything about your YouTube content…"):
+    if prompt := st.chat_input("Ask anything about your videos…"):
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -729,40 +729,45 @@ def _page_chat() -> None:
 def _landing() -> None:
     st.markdown(
         """
-## 👋 Welcome to YouTube Playlist AI Chatbot!
+<div class="hero-block">
+  <h1>Understand any YouTube playlist — instantly.</h1>
+  <p class="hero-sub">Paste a playlist or video link on the left, then ask questions, get summaries, and uncover insights in seconds.</p>
+</div>
 
-Load a YouTube playlist or video(s) using the **sidebar** to get started.
+<div class="feature-grid">
+  <div class="feature-card">
+    <div class="feature-icon">📊</div>
+    <div class="feature-title">Instant Dashboard</div>
+    <div class="feature-desc">See total views, top-performing videos, durations, and thumbnails at a glance.</div>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">💬</div>
+    <div class="feature-title">Conversational Q&A</div>
+    <div class="feature-desc">Ask natural-language questions about any video in the playlist and get accurate, sourced answers.</div>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">📝</div>
+    <div class="feature-title">Video Summaries</div>
+    <div class="feature-desc">Get a crisp AI-generated summary for any individual video without watching it.</div>
+  </div>
+  <div class="feature-card">
+    <div class="feature-icon">🔍</div>
+    <div class="feature-title">Deep Search</div>
+    <div class="feature-desc">Search across all transcripts to find exactly where a topic was discussed.</div>
+  </div>
+</div>
 
----
-
-### 📥 Supported inputs
-
-| Type | Example |
-|------|---------|
-| Playlist URL | `https://youtube.com/playlist?list=PL…` |
-| Single video | `https://youtube.com/watch?v=dQw4w9WgXcQ` |
-| Short link | `https://youtu.be/dQw4w9WgXcQ` |
-| Multiple videos | `url1, url2, url3` |
-
----
-
-### ✨ Features
-
-- 📊 **Dashboard** – total views, top videos, thumbnails, durations, AI editorial summary
-- 💬 **Chat** – ask anything; the ReAct agent answers using transcript search & metadata
-- 🔍 **Semantic search** – LlamaIndex + ChromaDB (in-memory) over video transcripts
-- 🧠 **Transparent reasoning** – expandable agent thought process for every answer
-- 🌊 **Streaming responses** – word-by-word token streaming to the chat interface
-
----
-
-### 🔑 Required API keys (set in Streamlit secrets)
-
-| Secret key | Where to get it |
-|-----------|-----------------|
-| `YOUTUBE_API_KEY` | [Google Cloud Console → YouTube Data API v3](https://console.cloud.google.com/apis/) |
-| `GOOGLE_API_KEY`  | [Google AI Studio](https://aistudio.google.com/app/apikey) |
-        """
+<div class="supported-block">
+  <h3>Supported link formats</h3>
+  <table class="supported-table">
+    <tr><td>Playlist</td><td><code>https://youtube.com/playlist?list=PL…</code></td></tr>
+    <tr><td>Single video</td><td><code>https://youtube.com/watch?v=…</code></td></tr>
+    <tr><td>Short link</td><td><code>https://youtu.be/…</code></td></tr>
+    <tr><td>Multiple videos</td><td><code>url1, url2, url3</code></td></tr>
+  </table>
+</div>
+        """,
+        unsafe_allow_html=True,
     )
 
 
@@ -771,49 +776,527 @@ Load a YouTube playlist or video(s) using the **sidebar** to get started.
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def main() -> None:
-    st.title("🎬 YouTube Playlist AI Chatbot")
-    st.caption(
-        "Powered by **Gemini 1.5 Flash** · **LangChain ReAct** · "
-        "**LlamaIndex** · **ChromaDB** · **text-embedding-004**"
-    )
+    # ── inject custom CSS ─────────────────────────────────────────────────────
+    # Design system: "PlaylistIQ Obsidian" — generated via Stitch MCP
+    # Palette: bg #0B0D14 · surface #1A1D2E · accent #6C63FF→#8781FF · Inter
+    st.markdown("""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800&display=swap');
 
-    # ── sidebar ───────────────────────────────────────────────────────────────
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── hide default Streamlit chrome ── */
+    #MainMenu, footer { visibility: hidden; }
+    header { visibility: hidden; }
+
+    /* ════════════════════════════════════════════
+       APP BACKGROUND — Layer 0
+    ════════════════════════════════════════════ */
+    .stApp {
+        background: #0B0D14;
+        color: #E2E2EC;
+    }
+
+    /* ════════════════════════════════════════════
+       SIDEBAR — Layer 1 (Control Center)
+    ════════════════════════════════════════════ */
+    [data-testid="stSidebar"] {
+        background: #1A1D2E;
+        border-right: 1px solid rgba(37, 40, 64, 0.8);
+    }
+    [data-testid="stSidebar"] > div:first-child {
+        padding-top: 1.5rem;
+    }
+
+    /* Sidebar text inputs & textarea */
+    [data-testid="stSidebar"] .stTextArea textarea,
+    [data-testid="stSidebar"] .stTextInput input {
+        background: #11131A;
+        border: 1px solid #252840;
+        color: #E2E2EC;
+        border-radius: 10px;
+        font-size: 0.875rem;
+        line-height: 1.6;
+        transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    [data-testid="stSidebar"] .stTextArea textarea:focus,
+    [data-testid="stSidebar"] .stTextInput input:focus {
+        border-color: rgba(108, 99, 255, 0.5);
+        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.12);
+        outline: none;
+    }
+
+    /* Primary CTA button — gradient pill */
+    [data-testid="stSidebar"] .stButton > button[kind="primary"],
+    [data-testid="stSidebar"] .stButton > button {
+        background: linear-gradient(135deg, #6C63FF 0%, #8781FF 100%);
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        letter-spacing: 0.01em;
+        width: 100%;
+        padding: 0.65rem 1rem;
+        box-shadow: 0 4px 20px rgba(108, 99, 255, 0.25);
+        transition: box-shadow 0.25s, transform 0.15s, opacity 0.2s;
+        cursor: pointer;
+    }
+    [data-testid="stSidebar"] .stButton > button:hover {
+        box-shadow: 0 6px 28px rgba(108, 99, 255, 0.4);
+        transform: translateY(-1px);
+        opacity: 0.95;
+    }
+    [data-testid="stSidebar"] .stButton > button:active {
+        transform: translateY(0px);
+        box-shadow: 0 2px 10px rgba(108, 99, 255, 0.3);
+    }
+    [data-testid="stSidebar"] .stButton > button:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+
+    /* Secondary / ghost button (Start over) */
+    [data-testid="stSidebar"] .stButton > button[kind="secondary"] {
+        background: transparent;
+        border: 1px solid #252840;
+        color: #8B8FAA;
+        box-shadow: none;
+    }
+    [data-testid="stSidebar"] .stButton > button[kind="secondary"]:hover {
+        background: #252840;
+        color: #E2E2EC;
+        box-shadow: none;
+        transform: none;
+    }
+
+    /* Success alert in sidebar */
+    [data-testid="stSidebar"] .stAlert {
+        background: rgba(34, 197, 94, 0.08) !important;
+        border: 1px solid rgba(34, 197, 94, 0.25) !important;
+        border-radius: 10px !important;
+        color: #4ADE80 !important;
+        font-size: 0.82rem;
+        font-weight: 500;
+    }
+
+    /* ── sidebar logo / brand ── */
+    .sidebar-brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 0.2rem 0 1.4rem 0;
+        border-bottom: 1px solid rgba(37, 40, 64, 0.9);
+        margin-bottom: 1.4rem;
+    }
+    .sidebar-brand .brand-icon-wrap {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #6C63FF 0%, #8781FF 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+        box-shadow: 0 4px 16px rgba(108, 99, 255, 0.35);
+    }
+    .sidebar-brand .brand-name {
+        font-size: 1.05rem;
+        font-weight: 700;
+        color: #E2E2EC;
+        letter-spacing: -0.025em;
+        line-height: 1.2;
+    }
+    .sidebar-brand .brand-tagline {
+        font-size: 0.7rem;
+        color: #8B8FAA;
+        margin-top: 2px;
+        letter-spacing: 0.01em;
+    }
+
+    /* ── section labels in sidebar ── */
+    .sidebar-section-label {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #4D5175;
+        margin: 1.2rem 0 0.6rem 0;
+    }
+
+    /* ════════════════════════════════════════════
+       LANDING PAGE — Hero & Features
+    ════════════════════════════════════════════ */
+    .hero-block {
+        text-align: center;
+        padding: 5rem 2rem 3rem 2rem;
+    }
+    .hero-block h1 {
+        font-size: 2.75rem;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        color: #E2E2EC;
+        margin-bottom: 0.75rem;
+        line-height: 1.15;
+    }
+    .hero-sub {
+        display: block;
+        font-size: 1.05rem;
+        font-weight: 400;
+        color: #8B8FAA;
+        max-width: 540px;
+        margin: 0.6rem auto 0 auto;
+        line-height: 1.7;
+        text-align: center;
+    }
+
+    /* feature cards grid */
+    .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+        max-width: 960px;
+        margin: 3rem auto 0 auto;
+    }
+    @media (max-width: 860px) {
+        .feature-grid { grid-template-columns: repeat(2, 1fr); }
+        .hero-block h1 { font-size: 2rem; }
+    }
+    .feature-card {
+        background: #1A1D2E;
+        border: 1px solid #252840;
+        border-radius: 16px;
+        padding: 1.5rem 1.2rem;
+        text-align: center;
+        cursor: default;
+        transition: border-color 0.25s, transform 0.2s, box-shadow 0.25s;
+    }
+    .feature-card:hover {
+        border-color: rgba(108, 99, 255, 0.35);
+        transform: translateY(-3px);
+        box-shadow: 0 12px 32px rgba(108, 99, 255, 0.08);
+    }
+    .feature-icon {
+        font-size: 2rem;
+        margin-bottom: 0.65rem;
+        display: block;
+    }
+    .feature-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #E2E2EC;
+        margin-bottom: 0.4rem;
+        letter-spacing: -0.01em;
+    }
+    .feature-desc {
+        font-size: 0.8rem;
+        color: #8B8FAA;
+        line-height: 1.55;
+    }
+
+    /* supported links card */
+    .supported-block {
+        max-width: 720px;
+        margin: 3.5rem auto;
+        padding: 1.75rem 2rem;
+        background: #1A1D2E;
+        border: 1px solid #252840;
+        border-radius: 16px;
+    }
+    .supported-block h3 {
+        font-size: 0.65rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #4D5175;
+        margin-bottom: 1.1rem;
+    }
+    .supported-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .supported-table td {
+        padding: 0.5rem 0.7rem;
+        border-bottom: 1px solid rgba(37, 40, 64, 0.8);
+        color: #8B8FAA;
+        vertical-align: middle;
+    }
+    .supported-table tr:last-child td { border-bottom: none; }
+    .supported-table td:first-child { color: #C7C4D8; font-weight: 500; width: 140px; }
+    .supported-table code {
+        background: #11131A;
+        padding: 3px 8px;
+        border-radius: 6px;
+        font-size: 0.78rem;
+        color: #A8B4CC;
+        font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    /* ════════════════════════════════════════════
+       KPI METRIC CARDS — Purple left-border accent
+    ════════════════════════════════════════════ */
+    [data-testid="stMetric"] {
+        background: #1A1D2E;
+        border: 1px solid #252840;
+        border-left: 3px solid #6C63FF;
+        border-radius: 14px;
+        padding: 1.1rem 1.25rem;
+        box-shadow: 0 4px 20px rgba(108, 99, 255, 0.05);
+        transition: box-shadow 0.25s, transform 0.2s;
+    }
+    [data-testid="stMetric"]:hover {
+        box-shadow: 0 8px 32px rgba(108, 99, 255, 0.1);
+        transform: translateY(-2px);
+    }
+    [data-testid="stMetricLabel"] {
+        font-size: 0.65rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.1em !important;
+        text-transform: uppercase !important;
+        color: #4D5175 !important;
+    }
+    [data-testid="stMetricValue"] {
+        font-size: 1.75rem !important;
+        font-weight: 700 !important;
+        color: #E2E2EC !important;
+        letter-spacing: -0.025em !important;
+        line-height: 1.15 !important;
+    }
+
+    /* ════════════════════════════════════════════
+       TAB NAVIGATION
+    ════════════════════════════════════════════ */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 0;
+        background: transparent;
+        border-bottom: 1px solid #252840;
+        padding: 0;
+    }
+    .stTabs [data-baseweb="tab"] {
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        border-radius: 0;
+        color: #8B8FAA;
+        font-weight: 500;
+        font-size: 0.88rem;
+        padding: 0.65rem 1.4rem;
+        transition: color 0.2s, border-color 0.2s;
+        margin-bottom: -1px;
+    }
+    .stTabs [data-baseweb="tab"]:hover {
+        color: #C7C4D8;
+    }
+    .stTabs [aria-selected="true"] {
+        background: transparent;
+        color: #E2E2EC;
+        border-bottom: 2px solid #6C63FF;
+        font-weight: 600;
+    }
+
+    /* ════════════════════════════════════════════
+       CHAT INTERFACE
+    ════════════════════════════════════════════ */
+    [data-testid="stChatMessage"] {
+        background: #1A1D2E;
+        border: 1px solid #252840;
+        border-radius: 14px;
+        margin-bottom: 0.75rem;
+        padding: 0.25rem 0;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+        transition: border-color 0.2s;
+    }
+    [data-testid="stChatMessage"]:hover {
+        border-color: rgba(108, 99, 255, 0.2);
+    }
+
+    /* Chat input bar */
+    [data-testid="stChatInput"] {
+        border-top: 1px solid #252840 !important;
+        background: #11131A !important;
+    }
+    [data-testid="stChatInput"] textarea {
+        background: #1A1D2E !important;
+        border: 1px solid #252840 !important;
+        border-radius: 12px !important;
+        color: #E2E2EC !important;
+        font-size: 0.9rem !important;
+    }
+    [data-testid="stChatInput"] textarea:focus {
+        border-color: rgba(108, 99, 255, 0.5) !important;
+        box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.1) !important;
+    }
+
+    /* ════════════════════════════════════════════
+       PAGE HEADINGS & TYPOGRAPHY
+    ════════════════════════════════════════════ */
+    h1, h2, h3 {
+        color: #E2E2EC;
+        font-weight: 700;
+        letter-spacing: -0.025em;
+    }
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.4rem; font-weight: 600; }
+    h3 { font-size: 1.05rem; }
+
+    /* Section subheaders */
+    .stApp .stMarkdown h2,
+    .stApp .stMarkdown h3 {
+        color: #C7C4D8;
+    }
+
+    /* ════════════════════════════════════════════
+       DIVIDERS
+    ════════════════════════════════════════════ */
+    hr {
+        border: none;
+        border-top: 1px solid #252840;
+        margin: 2rem 0;
+    }
+
+    /* ════════════════════════════════════════════
+       EXPANDERS / ACCORDIONS
+    ════════════════════════════════════════════ */
+    .streamlit-expanderHeader {
+        font-size: 0.88rem;
+        color: #C7C4D8;
+        font-weight: 500;
+        background: #1A1D2E !important;
+        border: 1px solid #252840 !important;
+        border-radius: 10px !important;
+        padding: 0.7rem 1rem !important;
+        transition: background 0.2s, border-color 0.2s;
+    }
+    .streamlit-expanderHeader:hover {
+        background: #282A31 !important;
+        border-color: rgba(108, 99, 255, 0.25) !important;
+    }
+    .streamlit-expanderContent {
+        background: #13151F !important;
+        border: 1px solid #252840 !important;
+        border-top: none !important;
+        border-radius: 0 0 10px 10px !important;
+    }
+
+    /* ════════════════════════════════════════════
+       ALERT / INFO / WARNING BANNERS
+    ════════════════════════════════════════════ */
+    .stAlert {
+        border-radius: 10px !important;
+        border-left-width: 3px !important;
+        font-size: 0.875rem;
+    }
+    [data-testid="stNotificationContentInfo"] {
+        background: rgba(108, 99, 255, 0.08) !important;
+        border-color: rgba(108, 99, 255, 0.4) !important;
+    }
+    [data-testid="stNotificationContentWarning"] {
+        background: rgba(245, 158, 11, 0.08) !important;
+        border-color: rgba(245, 158, 11, 0.4) !important;
+    }
+    [data-testid="stNotificationContentError"] {
+        background: rgba(239, 68, 68, 0.08) !important;
+        border-color: rgba(239, 68, 68, 0.4) !important;
+    }
+    [data-testid="stNotificationContentSuccess"] {
+        background: rgba(34, 197, 94, 0.08) !important;
+        border-color: rgba(34, 197, 94, 0.4) !important;
+    }
+
+    /* ════════════════════════════════════════════
+       PROGRESS BAR
+    ════════════════════════════════════════════ */
+    .stProgress > div > div > div {
+        background: linear-gradient(90deg, #6C63FF, #8781FF) !important;
+        border-radius: 99px;
+    }
+    .stProgress > div > div {
+        background: #252840 !important;
+        border-radius: 99px;
+    }
+
+    /* ════════════════════════════════════════════
+       SPINNER
+    ════════════════════════════════════════════ */
+    .stSpinner > div {
+        border-top-color: #6C63FF !important;
+    }
+
+    /* ════════════════════════════════════════════
+       IMAGES (video thumbnails)
+    ════════════════════════════════════════════ */
+    [data-testid="stImage"] img {
+        border-radius: 10px;
+        border: 1px solid #252840;
+    }
+
+    /* ════════════════════════════════════════════
+       SCROLLBAR (WebKit)
+    ════════════════════════════════════════════ */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0B0D14; }
+    ::-webkit-scrollbar-thumb {
+        background: #252840;
+        border-radius: 99px;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: #6C63FF; }
+
+    /* ════════════════════════════════════════════
+       SELECTION
+    ════════════════════════════════════════════ */
+    ::selection {
+        background: rgba(108, 99, 255, 0.25);
+        color: #E2E2EC;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
+    # ── sidebar brand ─────────────────────────────────────────────────────────
     with st.sidebar:
-        st.header("⚙️ Configuration")
+        st.markdown("""
+        <div class="sidebar-brand">
+          <div class="brand-icon-wrap">▶</div>
+          <div>
+            <div class="brand-name">PlaylistIQ</div>
+            <div class="brand-tagline">AI-powered YouTube analysis</div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
 
+    # ── sidebar continued (API keys + input) ─────────────────────────────────
+    with st.sidebar:
         # Load API keys from Streamlit secrets
         try:
             yt_key: str = st.secrets["YOUTUBE_API_KEY"]
             g_key: str = st.secrets["GOOGLE_API_KEY"]
-            st.success("✅ API keys loaded")
         except (KeyError, FileNotFoundError):
-            st.error("❌ API keys not found in secrets")
-            st.info(
-                "**Local setup** – create `.streamlit/secrets.toml`:\n"
-                "```toml\n"
-                'YOUTUBE_API_KEY = "your-key"\n'
-                'GOOGLE_API_KEY  = "your-key"\n'
-                "```\n"
-                "**Streamlit Cloud** – add secrets in the app dashboard."
+            st.error("API keys not configured.")
+            st.markdown(
+                "Add `YOUTUBE_API_KEY` and `GOOGLE_API_KEY` to your "
+                "[Streamlit secrets](https://docs.streamlit.io/deploy/streamlit-community-cloud/deploy-your-app/secrets-management) "
+                "to get started."
             )
             st.stop()
 
-        st.divider()
-        st.header("📥 Load Content")
+        st.markdown('<div class="sidebar-section-label">Analyze content</div>', unsafe_allow_html=True)
 
         url_input = st.text_area(
-            "YouTube URL(s)",
+            "Paste a YouTube link",
             placeholder=(
-                "Playlist: https://youtube.com/playlist?list=…\n"
-                "Video:    https://youtube.com/watch?v=…\n"
+                "Playlist: youtube.com/playlist?list=…\n"
+                "Video:    youtube.com/watch?v=…\n"
                 "Multiple: url1, url2, url3"
             ),
             height=110,
             key="url_input_box",
+            label_visibility="collapsed",
         )
 
         process_clicked = st.button(
-            "🚀 Process",
+            "Analyze →",
             type="primary",
             disabled=not bool(url_input and url_input.strip()),
         )
@@ -824,9 +1307,9 @@ def main() -> None:
             st.divider()
             n = len(st.session_state.videos)
             t = len(st.session_state.transcripts)
-            st.success(f"✅ {n} videos loaded  ({t} transcripts)")
+            st.success(f"{n} videos ready · {t} transcribed")
 
-            if st.button("🗑️ Clear Session"):
+            if st.button("Start over"):
                 for k in [
                     "videos",
                     "transcripts",
@@ -845,7 +1328,7 @@ def main() -> None:
         _landing()
         return
 
-    tab1, tab2 = st.tabs(["📊 Dashboard", "💬 Chat"])
+    tab1, tab2 = st.tabs(["Overview", "Chat"])
     with tab1:
         _page_dashboard()
     with tab2:
